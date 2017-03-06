@@ -35,6 +35,7 @@ import (
 	"k8s.io/kops/pkg/model/awsmodel"
 	"k8s.io/kops/pkg/model/components"
 	"k8s.io/kops/pkg/model/gcemodel"
+	"k8s.io/kops/pkg/model/vspheremodel"
 	"k8s.io/kops/upup/pkg/fi"
 	"k8s.io/kops/upup/pkg/fi/cloudup/awstasks"
 	"k8s.io/kops/upup/pkg/fi/cloudup/awsup"
@@ -42,14 +43,13 @@ import (
 	"k8s.io/kops/upup/pkg/fi/cloudup/gce"
 	"k8s.io/kops/upup/pkg/fi/cloudup/gcetasks"
 	"k8s.io/kops/upup/pkg/fi/cloudup/terraform"
+	"k8s.io/kops/upup/pkg/fi/cloudup/vsphere"
+	"k8s.io/kops/upup/pkg/fi/cloudup/vspheretasks"
 	"k8s.io/kops/upup/pkg/fi/fitasks"
 	"k8s.io/kops/upup/pkg/fi/nodeup"
 	"k8s.io/kops/util/pkg/hashing"
 	"k8s.io/kops/util/pkg/vfs"
 	k8sapi "k8s.io/kubernetes/pkg/api"
-	"k8s.io/kops/pkg/model/vspheremodel"
-	"k8s.io/kops/upup/pkg/fi/cloudup/vspheretasks"
-	"k8s.io/kops/upup/pkg/fi/cloudup/vsphere"
 )
 
 const DefaultMaxTaskDuration = 10 * time.Minute
@@ -372,7 +372,7 @@ func (c *ApplyClusterCmd) Run() error {
 			//}
 
 			l.AddTypes(map[string]interface{}{
-				"instance":       &vspheretasks.VirtualMachine{},
+				"instance": &vspheretasks.VirtualMachine{},
 			})
 		}
 
@@ -458,7 +458,7 @@ func (c *ApplyClusterCmd) Run() error {
 				}
 
 				l.Builders = append(l.Builders,
-				&vspheremodel.VirtualMachineModelBuilder{VSphereModelContext: vsphereModelContext})
+					&vspheremodel.VirtualMachineModelBuilder{VSphereModelContext: vsphereModelContext})
 
 			default:
 				return fmt.Errorf("unknown cloudprovider %q", cluster.Spec.CloudProvider)
