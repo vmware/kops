@@ -250,3 +250,6 @@
 [submodule "_vendor/github.com/chai2010/gettext-go"]
 	path = _vendor/github.com/chai2010/gettext-go
 	url = https://github.com/chai2010/gettext-go
+[submodule "_vendor/github.com/vmware/govmomi"]
+	path = _vendor/github.com/vmware/govmomi
+	url = https://github.com/vmware/govmomi.git
