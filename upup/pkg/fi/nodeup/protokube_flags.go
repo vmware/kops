@@ -29,4 +29,5 @@ type ProtokubeFlags struct {
 
 	DNSInternalSuffix *string `json:"dnsInternalSuffix,omitempty" flag:"dns-internal-suffix"`
 	Cloud             *string `json:"cloud,omitempty" flag:"cloud"`
+	ClusterId         *string `json:"cluster-id,omitempty" flag:"cluster-id"`
 }
