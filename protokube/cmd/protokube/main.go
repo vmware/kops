@@ -121,10 +121,11 @@ func run() error {
 			internalIP = gceVolumes.InternalIP()
 		}
 	} else if cloud == "vsphere" {
-		fmt.Println("Initializing vSphere volumes")
+		glog.Info("Initializing vSphere volumes")
 		vsphereVolumes, err := protokube.NewVSphereVolumes()
 		if err != nil {
 			glog.Errorf("Error initializing vSphere: %q", err)
+			os.Exit(1)
 		}
 		volumes = vsphereVolumes
 		if internalIP == nil {
@@ -199,7 +200,7 @@ func run() error {
 	}
 
 	rootfs := "/"
-	if containerized && cloud != "vsphere" {
+	if containerized {
 		rootfs = "/rootfs/"
 	}
 	protokube.RootFS = rootfs

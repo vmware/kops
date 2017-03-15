@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors.
+Copyright 2017 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ limitations under the License.
 package protokube
 
 import (
+	"errors"
 	"github.com/golang/glog"
 	"net"
 )
@@ -29,36 +30,42 @@ const EtcdEventVolPath = "/mnt/master-" + EtcdEventKey
 // TODO Use lsblk or counterpart command to find the actual device details.
 const LocalDeviceForDataVol = "/dev/sdb1"
 const LocalDeviceForEventsVol = "/dev/sdc1"
-const AttachedToValue = "localhost"
 const VolStatusValue = "attached"
 const EtcdNodeName = "a"
 const EtcdClusterName = "main"
 const EtcdEventsClusterName = "events"
 
 type VSphereVolumes struct {
+	// Dummy property. Not getting used any where for now.
 	paths map[string]string
 }
 
 var _ Volumes = &VSphereVolumes{}
+var machineIp net.IP
 
 func NewVSphereVolumes() (*VSphereVolumes, error) {
 	vsphereVolumes := &VSphereVolumes{
 		paths: make(map[string]string),
 	}
 	vsphereVolumes.paths[EtcdDataKey] = EtcdDataVolPath
-	//vsphereVolumes.paths[EtcdEventKey] = EtcdEventVolPath
-	glog.Infof("Created new VSphereVolumes instance.")
+	vsphereVolumes.paths[EtcdEventKey] = EtcdEventVolPath
 	return vsphereVolumes, nil
 }
 
 func (v *VSphereVolumes) FindVolumes() ([]*Volume, error) {
 	var volumes []*Volume
+	ip := v.InternalIp()
+	attachedTo := ""
+	if ip != nil {
+		attachedTo = ip.String()
+	}
+
 	// etcd data volume and etcd cluster spec.
 	{
 		vol := &Volume{
 			ID:          EtcdDataKey,
 			LocalDevice: LocalDeviceForDataVol,
-			AttachedTo:  AttachedToValue,
+			AttachedTo:  attachedTo,
 			Mountpoint:  EtcdDataVolPath,
 			Status:      VolStatusValue,
 			Info: VolumeInfo{
@@ -79,7 +86,7 @@ func (v *VSphereVolumes) FindVolumes() ([]*Volume, error) {
 		vol := &Volume{
 			ID:          EtcdEventKey,
 			LocalDevice: LocalDeviceForEventsVol,
-			AttachedTo:  AttachedToValue,
+			AttachedTo:  attachedTo,
 			Mountpoint:  EtcdEventVolPath,
 			Status:      VolStatusValue,
 			Info: VolumeInfo{
@@ -105,7 +112,49 @@ func (v *VSphereVolumes) AttachVolume(volume *Volume) error {
 }
 
 func (v *VSphereVolumes) InternalIp() net.IP {
-	ipStr := "127.0.0.1"
-	ip := net.ParseIP(ipStr)
-	return ip
+	if machineIp == nil {
+		ip, err := getMachineIp()
+		if err != nil {
+			return ip
+		}
+		machineIp = ip
+	}
+	return machineIp
+}
+
+func getMachineIp() (net.IP, error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+	for _, iface := range ifaces {
+		if iface.Flags&net.FlagUp == 0 {
+			continue // interface down
+		}
+		if iface.Flags&net.FlagLoopback != 0 {
+			continue // loopback interface
+		}
+		addrs, err := iface.Addrs()
+		if err != nil {
+			return nil, err
+		}
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+			if ip == nil || ip.IsLoopback() {
+				continue
+			}
+			ip = ip.To4()
+			if ip == nil {
+				continue // not an ipv4 address
+			}
+			return ip, nil
+		}
+	}
+	return nil, errors.New("No IP found.")
 }

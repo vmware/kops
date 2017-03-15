@@ -16,8 +16,7 @@ all: kops
 
 .PHONY: channels examples
 
-#DOCKER_REGISTRY?=gcr.io/must-override
-DOCKER_REGISTRY=prashima
+DOCKER_REGISTRY?=gcr.io/must-override
 S3_BUCKET?=s3://must-override/
 GCS_LOCATION?=gs://must-override
 GCS_URL=$(GCS_LOCATION:gs://%=https://storage.googleapis.com/%)
