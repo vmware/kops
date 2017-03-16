@@ -153,7 +153,7 @@ func precreateDNS(cluster *api.Cluster, cloud fi.Cloud) error {
 	recordsMap := make(map[string]dnsprovider.ResourceRecordSet)
 	// vSphere provider uses CoreDNS, which doesn't have rrs.List() function supported.
 	// Thus we use rrs.Get() to check every dnsHostname instead
-	if cloud.ProviderID() != "vsphere" {
+	if cloud.ProviderID() != fi.CloudProviderVSphere {
 		// TODO: We should change the filter to be a suffix match instead
 		//records, err := rrs.List("", "")
 		records, err := rrs.List()
@@ -175,7 +175,7 @@ func precreateDNS(cluster *api.Cluster, cloud fi.Cloud) error {
 	for _, dnsHostname := range dnsHostnames {
 		dnsHostname = dns.EnsureDotSuffix(dnsHostname)
 		found := false
-		if cloud.ProviderID() != "vsphere" {
+		if cloud.ProviderID() != fi.CloudProviderVSphere {
 			dnsRecord := recordsMap["A::"+dnsHostname]
 			if dnsRecord != nil {
 				rrdatas := dnsRecord.Rrdatas()

@@ -8,10 +8,11 @@ We are using [#sig-onprem channel](https://kubernetes.slack.com/messages/sig-onp
 ## Process
 Here is a [list of requirements and tasks](https://docs.google.com/document/d/10L7I98GuW7o7QuX_1QTouxC0t0aEO_68uHKNc7o4fXY/edit#heading=h.6wyer21z75n9 "Kops-vSphere specification") that we are working on. Once the basic infrastructure for vSphere is ready, we will move these tasks to issues.
 
-## CoreDNS
-Before the support of CoreDNS is stable, use env parameter "VSPHERE_DNS=coredns" to enable using CoreDNS. Or else AWS Route53 will be the default DNS service. To use Route53, follow instructions on: https://github.com/vmware/kops/blob/vsphere-develop/docs/aws.md
+## Setting up DNS
+Since vSphere doesn't have built-in DNS service, we use CoreDNS to support the DNS requirement in vSphere provider. This requires the users to setup a CoreDNS server before creating a kubernetes cluster. Please follow the following instructions to setup.
+Before the support of CoreDNS becomes stable, use env parameter "VSPHERE_DNS=coredns" to enable using CoreDNS. Or else AWS Route53 will be the default DNS service. To use Route53, follow instructions on: https://github.com/vmware/kops/blob/vsphere-develop/docs/aws.md
 
-For now we hardcoded DNS zone to skydns.local. So your cluster name should have suffix skydns.local.
+For now we hardcoded DNS zone to skydns.local. So your cluster name should have suffix skydns.local, for example: "mycluster.skydns.local"
 
 ### Setup CoreDNS server
 1. Login to vSphere Client.
@@ -20,7 +21,7 @@ For now we hardcoded DNS zone to skydns.local. So your cluster name should have 
 4. Copy and paste URL for [OVA](https://storage.googleapis.com/kubernetes-anywhere-for-vsphere-cna-storage/coredns.ova).
 5. Follow next steps according to instructions mentioned in wizard.
 6. Power on the imported VM.
-7. SSH into the VM and execute ./start-dns.sh under /root
+7. SSH into the VM and execute ./start-dns.sh under /root. Username/Password: root/kubernetes
 
 ### Check DNS server is ready
 On your local machine, execute the following command:

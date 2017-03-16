@@ -51,6 +51,7 @@ type VSphereCloud struct {
 const (
 	snapshotName string = "LinkCloneSnapshotPoint"
 	snapshotDesc string = "Snapshot created by kops"
+	privateDNS   string = "coredns"
 )
 
 var _ fi.Cloud = &VSphereCloud{}
@@ -99,7 +100,7 @@ func (c *VSphereCloud) DNS() (dnsprovider.Interface, error) {
 
 	var provider dnsprovider.Interface
 	var err error
-	if dns_provider == "coredns" {
+	if dns_provider == privateDNS {
 		var lines []string
 		lines = append(lines, "etcd-endpoints = "+c.CoreDNSServer)
 		lines = append(lines, "zones = "+c.DNSZone)
