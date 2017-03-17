@@ -482,6 +482,7 @@ func (c *ApplyClusterCmd) Run() error {
 		}
 
 		role := ig.Spec.Role
+		glog.V(4).Infof("Generating renderNodeUpConfig for %s", role)
 		if role == "" {
 			return nil, fmt.Errorf("cannot determine role for instance group: %v", ig.ObjectMeta.Name)
 		}

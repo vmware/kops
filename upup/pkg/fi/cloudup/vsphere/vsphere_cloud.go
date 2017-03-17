@@ -35,6 +35,9 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"github.com/vmware/govmomi/property"
+	"github.com/vmware/govmomi/vim25/mo"
+	"github.com/vmware/govmomi/vim25/soap"
 )
 
 type VSphereCloud struct {
@@ -219,5 +222,54 @@ func (c *VSphereCloud) PowerOn(vm string) error {
 		return err
 	}
 	task.Wait(ctx)
+	return nil
+}
+
+func (c *VSphereCloud) UploadAndAttachISO(vm *string, isoFile string) error {
+	f := find.NewFinder(c.Client.Client, true)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	dc, err := f.Datacenter(ctx, c.Datacenter)
+	if err != nil {
+		return err
+	}
+	f.SetDatacenter(dc)
+
+	vmRef, err := f.VirtualMachine(ctx, *vm)
+	if err != nil {
+		return err
+	}
+
+	var refs []types.ManagedObjectReference
+	refs = append(refs, vmRef.Reference())
+	var vmResult mo.VirtualMachine
+
+	pc := property.DefaultCollector(c.Client.Client)
+	err = pc.RetrieveOne(ctx, vmRef.Reference(), []string{"datastore"}, &vmResult)
+	if err != nil {
+		glog.Fatalf("Unable to retrieve VM summary for VM %s", vm)
+	}
+	glog.V(4).Infof("vm pc result :%+v\n", vmResult)
+
+	// We expect the VM to be on only 1 datastore
+	dsRef := vmResult.Datastore[0].Reference()
+	var dsResult mo.Datastore
+	err = pc.RetrieveOne(ctx, dsRef, []string{"summary"}, &dsResult)
+	if err != nil {
+		glog.Fatalf("Unable to retrieve datastore summary for datastore  %s", dsRef)
+	}
+	glog.V(4).Infof("datastore pc result :%+v\n", dsResult)
+	dsObj, err := f.Datastore(ctx, dsResult.Summary.Name)
+	if err != nil {
+		return err
+	}
+	p := soap.DefaultUpload
+	glog.V(2).Infof("Uploading ISO file %s to datastore %+v\n", isoFile, dsObj)
+	err = dsObj.UploadFile(ctx, isoFile, *vm + "/cloud-init.iso", &p)
+	if err != nil {
+		return err
+	}
+	glog.V(2).Infof("Uploaded ISO file %s to datastore %+v\n", isoFile, dsObj)
 	return nil
 }
