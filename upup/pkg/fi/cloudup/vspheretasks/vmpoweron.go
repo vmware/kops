@@ -30,6 +30,17 @@ type VMPowerOn struct {
 }
 
 var _ fi.HasName = &VMPowerOn{}
+var _ fi.HasDependencies = &VMPowerOn{}
+
+func (o *VMPowerOn) GetDependencies(tasks map[string]fi.Task) []fi.Task {
+	var deps []fi.Task
+	attachISOTask := tasks["AttachISO/"+*o.AttachISO.Name]
+	if attachISOTask == nil {
+		glog.Fatalf("Unable to find attachISO task %s dependency for VMPowerOn %s", *o.AttachISO.Name, *o.Name)
+	}
+	deps = append(deps, attachISOTask)
+	return deps
+}
 
 // GetName returns the Name of the object, implementing fi.HasName
 func (o *VMPowerOn) GetName() *string {

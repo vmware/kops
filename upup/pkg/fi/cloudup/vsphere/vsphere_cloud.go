@@ -25,7 +25,10 @@ import (
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
+	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/vim25"
+	"github.com/vmware/govmomi/vim25/mo"
+	"github.com/vmware/govmomi/vim25/soap"
 	"github.com/vmware/govmomi/vim25/types"
 	"k8s.io/kops/pkg/apis/kops"
 	"k8s.io/kops/upup/pkg/fi"
@@ -35,9 +38,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"github.com/vmware/govmomi/property"
-	"github.com/vmware/govmomi/vim25/mo"
-	"github.com/vmware/govmomi/vim25/soap"
 )
 
 type VSphereCloud struct {
@@ -248,9 +248,9 @@ func (c *VSphereCloud) UploadAndAttachISO(vm *string, isoFile string) error {
 	pc := property.DefaultCollector(c.Client.Client)
 	err = pc.RetrieveOne(ctx, vmRef.Reference(), []string{"datastore"}, &vmResult)
 	if err != nil {
-		glog.Fatalf("Unable to retrieve VM summary for VM %s", vm)
+		glog.Fatalf("Unable to retrieve VM summary for VM %s", *vm)
 	}
-	glog.V(4).Infof("vm pc result :%+v\n", vmResult)
+	glog.V(4).Infof("vm property collector result :%+v\n", vmResult)
 
 	// We expect the VM to be on only 1 datastore
 	dsRef := vmResult.Datastore[0].Reference()
@@ -259,17 +259,29 @@ func (c *VSphereCloud) UploadAndAttachISO(vm *string, isoFile string) error {
 	if err != nil {
 		glog.Fatalf("Unable to retrieve datastore summary for datastore  %s", dsRef)
 	}
-	glog.V(4).Infof("datastore pc result :%+v\n", dsResult)
+	glog.V(4).Infof("datastore property collector result :%+v\n", dsResult)
 	dsObj, err := f.Datastore(ctx, dsResult.Summary.Name)
 	if err != nil {
 		return err
 	}
 	p := soap.DefaultUpload
 	glog.V(2).Infof("Uploading ISO file %s to datastore %+v\n", isoFile, dsObj)
-	err = dsObj.UploadFile(ctx, isoFile, *vm + "/cloud-init.iso", &p)
+	err = dsObj.UploadFile(ctx, isoFile, *vm+"/cloud-init.iso", &p)
 	if err != nil {
 		return err
 	}
 	glog.V(2).Infof("Uploaded ISO file %s to datastore %+v\n", isoFile, dsObj)
-	return nil
+
+	// Find the cd-rom devide and insert the cloud init iso file into it.
+	devices, err := vmRef.Device(ctx)
+	if err != nil {
+		return err
+	}
+
+	cdrom, err := devices.FindCdrom("")
+	if err != nil {
+		return err
+	}
+	iso := dsObj.Path(*vm + "/cloud-init.iso")
+	return vmRef.EditDevice(ctx, devices.InsertIso(cdrom, iso))
 }

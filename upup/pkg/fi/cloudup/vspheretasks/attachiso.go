@@ -17,34 +17,50 @@ limitations under the License.
 package vspheretasks
 
 import (
+	"bytes"
+	"fmt"
 	"github.com/golang/glog"
+	"github.com/pborman/uuid"
+	"io/ioutil"
+	"k8s.io/kops/pkg/apis/kops"
+	"k8s.io/kops/pkg/model"
 	"k8s.io/kops/upup/pkg/fi"
 	"k8s.io/kops/upup/pkg/fi/cloudup/vsphere"
-	"k8s.io/kops/pkg/apis/kops"
-	"fmt"
-	"k8s.io/kops/pkg/model"
-	"io/ioutil"
-	"path/filepath"
-	"os/exec"
-	"bytes"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 )
 
 // AttachISO represents the cloud-init ISO file attached to a VMware VM
 //go:generate fitask -type=AttachISO
 type AttachISO struct {
-	Name *string
-	VM   *string
-	IG   *kops.InstanceGroup
+	Name            *string
+	VM              *string
+	IG              *kops.InstanceGroup
 	BootstrapScript *model.BootstrapScript
 }
 
 var _ fi.HasName = &AttachISO{}
 var _ fi.HasDependencies = &AttachISO{}
 
+const userData = `#cloud-config
+write_files:
+  - content: |
+$SCRIPT
+    owner: root:root
+    path: /tmp/script.sh
+    permissions: "0644"
+
+runcmd:
+  - bash /tmp/script.sh 2>&1 > /var/log/script.log`
+
+const metaData = `instance-id: $INSTANCE_ID
+local-hostname: $LOCAL_HOST_NAME`
+
 func (o *AttachISO) GetDependencies(tasks map[string]fi.Task) []fi.Task {
 	var deps []fi.Task
-	vmCreateTask := tasks["VirtualMachine/" + *o.VM]
+	vmCreateTask := tasks["VirtualMachine/"+*o.VM]
 	if vmCreateTask == nil {
 		glog.Fatalf("Unable to find create VM task %s dependency for AttachISO %s", *o.VM, *o.Name)
 	}
@@ -86,10 +102,7 @@ func (_ *AttachISO) RenderVC(t *vsphere.VSphereAPITarget, a, e, changes *AttachI
 	dir, err := ioutil.TempDir("", *changes.VM)
 	defer os.RemoveAll(dir)
 
-	isoFile, err := createISO(changes, startupStr, dir)
-	if err != nil {
-		return fmt.Errorf("error creating cloud-init file: %v", err)
-	}
+	isoFile := createISO(changes, startupStr, dir)
 	err = t.Cloud.UploadAndAttachISO(changes.VM, isoFile)
 	if err != nil {
 		return err
@@ -98,56 +111,56 @@ func (_ *AttachISO) RenderVC(t *vsphere.VSphereAPITarget, a, e, changes *AttachI
 	return nil
 }
 
-type WriteFiles struct {
-	Content string `json:"content"`
-	Owner string `json:"owner"`
-	Permissions string `json:"permissions"`
-	Path string `json:"path"`
-}
-
-type VSphereCloudInit struct {
-	WriteFiles WriteFiles `json:"write_files"`
-	Runcmd string `json:"runcmd"`
-}
-
-func createISO(changes *AttachISO, startupStr string, dir string) (string, error) {
-	cloudInit := VSphereCloudInit{
-		WriteFiles: WriteFiles{
-			Content: startupStr,
-			Owner: "root:root",
-			Permissions: "0644",
-			Path: "/tmp/script.sh",
-		},
-		Runcmd:"bash /tmp/script.sh > /var/log/script.log",
+func createUserData(startupStr string, dir string) {
+	// Update the startup script to add the extra spaces for
+	// indentation when copied to the user-data file.
+	strArray := strings.Split(startupStr, "\n")
+	for i, str := range strArray {
+		if len(str) > 0 {
+			strArray[i] = "       " + str
+		}
 	}
-	data, err := kops.ToRawYaml(cloudInit)
-	if err != nil {
-		return "", err
-	}
+	startupStr = strings.Join(strArray, "\n")
 
-	glog.V(4).Infof("Cloud-init file content: %s", string(data))
-
-
-	if err != nil {
-		glog.Fatalf("Could not create a temp directory for VM %s", *changes.VM)
-	}
+	data := strings.Replace(userData, "$SCRIPT", startupStr, -1)
 	userDataFile := filepath.Join(dir, "user-data")
-	if err := ioutil.WriteFile(userDataFile, data, 0644); err != nil {
+	glog.V(4).Infof("User data file content: %s", data)
+
+	if err := ioutil.WriteFile(userDataFile, []byte(data), 0644); err != nil {
 		glog.Fatalf("Unable to write user-data into file %s", userDataFile)
 	}
+	return
+}
 
-	isoFile := filepath.Join(dir, *changes.VM + ".iso")
+func createMetaData(dir string, vmName string) {
+	data := strings.Replace(metaData, "$INSTANCE_ID", uuid.NewUUID().String(), -1)
+	data = strings.Replace(data, "$LOCAL_HOST_NAME", vmName, -1)
+
+	glog.V(4).Infof("Meta data file content: %s", string(data))
+
+	metaDataFile := filepath.Join(dir, "meta-data")
+	if err := ioutil.WriteFile(metaDataFile, []byte(data), 0644); err != nil {
+		glog.Fatalf("Unable to write meta-data into file %s", metaDataFile)
+	}
+	return
+}
+
+func createISO(changes *AttachISO, startupStr string, dir string) string {
+	createUserData(startupStr, dir)
+	createMetaData(dir, *changes.VM)
+
+	isoFile := filepath.Join(dir, *changes.VM+".iso")
 	cmd := exec.Command("genisoimage", "-o", isoFile, "-volid", "cidata", "-joliet", "-rock", dir)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
-	err = cmd.Run()
+
+	err := cmd.Run()
 	if err != nil {
 		glog.Fatalf("Error %s occurred while executing command %+v", err, cmd)
 	}
 	glog.V(4).Infof("genisoimage std output : %s\n", out.String())
 	glog.V(4).Infof("genisoimage std error : %s\n", stderr.String())
-	return isoFile, nil
-
+	return isoFile
 }
