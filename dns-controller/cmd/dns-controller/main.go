@@ -31,6 +31,7 @@ import (
 	kubectl_util "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 
 	_ "k8s.io/kubernetes/federation/pkg/dnsprovider/providers/aws/route53"
+	_ "k8s.io/kubernetes/federation/pkg/dnsprovider/providers/coredns"
 	_ "k8s.io/kubernetes/federation/pkg/dnsprovider/providers/google/clouddns"
 )
 
@@ -95,7 +96,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	dnsController, err := dns.NewDNSController(dnsProvider, zoneRules)
+	dnsController, err := dns.NewDNSController(dnsProvider, zoneRules, dnsProviderId)
 	if err != nil {
 		glog.Errorf("Error building DNS controller: %v", err)
 		os.Exit(1)
