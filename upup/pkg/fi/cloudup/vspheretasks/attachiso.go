@@ -137,16 +137,18 @@ func createISO(changes *AttachISO, startupStr string, dir string) string {
 	createMetaData(dir, *changes.VM.Name)
 
 	isoFile := filepath.Join(dir, *changes.VM.Name+".iso")
-	var cmd *exec.Cmd
+	var commandName string
 
 	switch os := runtime.GOOS; os {
 	case "darwin":
-		cmd = exec.Command("mkisofs", "-o", isoFile, "-volid", "cidata", "-joliet", "-rock", dir)
+		commandName = "mkisofs"
 	case "linux":
-		cmd = exec.Command("genisoimage", "-o", isoFile, "-volid", "cidata", "-joliet", "-rock", dir)
+		commandName = "genisoimage"
+
 	default:
-		glog.Fatalf("Cannot generate ISO file %s. Unsupported operation system!!!", isoFile)
+		glog.Fatalf("Cannot generate ISO file %s. Unsupported operation system (%s)!!!", isoFile, os)
 	}
+	cmd := exec.Command(commandName, "-o", isoFile, "-volid", "cidata", "-joliet", "-rock", dir)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	var stderr bytes.Buffer
@@ -156,7 +158,7 @@ func createISO(changes *AttachISO, startupStr string, dir string) string {
 	if err != nil {
 		glog.Fatalf("Error %s occurred while executing command %+v", err, cmd)
 	}
-	glog.V(4).Infof("genisoimage std output : %s\n", out.String())
-	glog.V(4).Infof("genisoimage std error : %s\n", stderr.String())
+	glog.V(4).Infof("%s std output : %s\n", commandName, out.String())
+	glog.V(4).Infof("%s std error : %s\n", commandName, stderr.String())
 	return isoFile
 }

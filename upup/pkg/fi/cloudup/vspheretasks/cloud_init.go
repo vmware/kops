@@ -22,11 +22,11 @@ write_files:
   - content: |
 $SCRIPT
     owner: root:root
-    path: /tmp/script.sh
+    path: /root/script.sh
     permissions: "0644"
 
 runcmd:
-  - bash /tmp/script.sh 2>&1 > /var/log/script.log`
+  - bash /root/script.sh 2>&1 > /var/log/script.log`
 
 // Template for meta-data file in the cloud-init ISO
 const metaDataTemplate = `instance-id: $INSTANCE_ID
