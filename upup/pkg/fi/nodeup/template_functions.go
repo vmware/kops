@@ -273,8 +273,9 @@ func (t *templateFunctions) ProtokubeFlags() *ProtokubeFlags {
 		case fi.CloudProviderGCE:
 			f.DNSProvider = fi.String("google-clouddns")
 		case fi.CloudProviderVSphere:
-			f.DNSProvider = fi.String("aws-route53")
+			f.DNSProvider = fi.String("coredns")
 			f.ClusterId = fi.String(t.cluster.ObjectMeta.Name)
+			f.DNSServer = fi.String(*t.cluster.Spec.CloudConfig.VSphereCoreDNSServer)
 		default:
 			glog.Warningf("Unknown cloudprovider %q; won't set DNS provider")
 		}
