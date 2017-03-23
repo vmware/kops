@@ -29,6 +29,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -36,7 +37,7 @@ import (
 //go:generate fitask -type=AttachISO
 type AttachISO struct {
 	Name            *string
-	VM              *string
+	VM              *VirtualMachine
 	IG              *kops.InstanceGroup
 	BootstrapScript *model.BootstrapScript
 }
@@ -44,25 +45,11 @@ type AttachISO struct {
 var _ fi.HasName = &AttachISO{}
 var _ fi.HasDependencies = &AttachISO{}
 
-const userData = `#cloud-config
-write_files:
-  - content: |
-$SCRIPT
-    owner: root:root
-    path: /tmp/script.sh
-    permissions: "0644"
-
-runcmd:
-  - bash /tmp/script.sh 2>&1 > /var/log/script.log`
-
-const metaData = `instance-id: $INSTANCE_ID
-local-hostname: $LOCAL_HOST_NAME`
-
 func (o *AttachISO) GetDependencies(tasks map[string]fi.Task) []fi.Task {
 	var deps []fi.Task
-	vmCreateTask := tasks["VirtualMachine/"+*o.VM]
+	vmCreateTask := tasks["VirtualMachine/"+*o.VM.Name]
 	if vmCreateTask == nil {
-		glog.Fatalf("Unable to find create VM task %s dependency for AttachISO %s", *o.VM, *o.Name)
+		glog.Fatalf("Unable to find create VM task %s dependency for AttachISO %s", *o.VM.Name, *o.Name)
 	}
 	deps = append(deps, vmCreateTask)
 	return deps
@@ -93,17 +80,17 @@ func (_ *AttachISO) CheckChanges(a, e, changes *AttachISO) error {
 	return nil
 }
 
-func (_ *AttachISO) RenderVC(t *vsphere.VSphereAPITarget, a, e, changes *AttachISO) error {
+func (_ *AttachISO) RenderVSphere(t *vsphere.VSphereAPITarget, a, e, changes *AttachISO) error {
 	startupScript, err := changes.BootstrapScript.ResourceNodeUp(changes.IG)
 	startupStr, err := startupScript.AsString()
 	if err != nil {
 		return fmt.Errorf("error rendering startup script: %v", err)
 	}
-	dir, err := ioutil.TempDir("", *changes.VM)
+	dir, err := ioutil.TempDir("", *changes.VM.Name)
 	defer os.RemoveAll(dir)
 
 	isoFile := createISO(changes, startupStr, dir)
-	err = t.Cloud.UploadAndAttachISO(changes.VM, isoFile)
+	err = t.Cloud.UploadAndAttachISO(changes.VM.Name, isoFile)
 	if err != nil {
 		return err
 	}
@@ -122,7 +109,7 @@ func createUserData(startupStr string, dir string) {
 	}
 	startupStr = strings.Join(strArray, "\n")
 
-	data := strings.Replace(userData, "$SCRIPT", startupStr, -1)
+	data := strings.Replace(userDataTemplate, "$SCRIPT", startupStr, -1)
 	userDataFile := filepath.Join(dir, "user-data")
 	glog.V(4).Infof("User data file content: %s", data)
 
@@ -133,7 +120,7 @@ func createUserData(startupStr string, dir string) {
 }
 
 func createMetaData(dir string, vmName string) {
-	data := strings.Replace(metaData, "$INSTANCE_ID", uuid.NewUUID().String(), -1)
+	data := strings.Replace(metaDataTemplate, "$INSTANCE_ID", uuid.NewUUID().String(), -1)
 	data = strings.Replace(data, "$LOCAL_HOST_NAME", vmName, -1)
 
 	glog.V(4).Infof("Meta data file content: %s", string(data))
@@ -147,10 +134,19 @@ func createMetaData(dir string, vmName string) {
 
 func createISO(changes *AttachISO, startupStr string, dir string) string {
 	createUserData(startupStr, dir)
-	createMetaData(dir, *changes.VM)
+	createMetaData(dir, *changes.VM.Name)
 
-	isoFile := filepath.Join(dir, *changes.VM+".iso")
-	cmd := exec.Command("genisoimage", "-o", isoFile, "-volid", "cidata", "-joliet", "-rock", dir)
+	isoFile := filepath.Join(dir, *changes.VM.Name+".iso")
+	var cmd *exec.Cmd
+
+	switch os := runtime.GOOS; os {
+	case "darwin":
+		cmd = exec.Command("mkisofs", "-o", isoFile, "-volid", "cidata", "-joliet", "-rock", dir)
+	case "linux":
+		cmd = exec.Command("genisoimage", "-o", isoFile, "-volid", "cidata", "-joliet", "-rock", dir)
+	default:
+		glog.Fatalf("Cannot generate ISO file %s. Unsupported operation system!!!", isoFile)
+	}
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	var stderr bytes.Buffer

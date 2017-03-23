@@ -49,7 +49,7 @@ func (b *AutoscalingGroupModelBuilder) Build(c *fi.ModelBuilderContext) error {
 		attachISOTaskName := "AttachISO-" + name
 		attachISOTask := &vspheretasks.AttachISO{
 			Name:            &attachISOTaskName,
-			VM:              &name,
+			VM:              createVmTask,
 			IG:              ig,
 			BootstrapScript: b.BootstrapScript,
 		}

@@ -52,9 +52,10 @@ type VSphereCloud struct {
 }
 
 const (
-	snapshotName string = "LinkCloneSnapshotPoint"
-	snapshotDesc string = "Snapshot created by kops"
-	privateDNS   string = "coredns"
+	snapshotName  string = "LinkCloneSnapshotPoint"
+	snapshotDesc  string = "Snapshot created by kops"
+	privateDNS    string = "coredns"
+	cloudInitFile string = "cloud-init.iso"
 )
 
 var _ fi.Cloud = &VSphereCloud{}
@@ -265,12 +266,13 @@ func (c *VSphereCloud) UploadAndAttachISO(vm *string, isoFile string) error {
 		return err
 	}
 	p := soap.DefaultUpload
-	glog.V(2).Infof("Uploading ISO file %s to datastore %+v\n", isoFile, dsObj)
-	err = dsObj.UploadFile(ctx, isoFile, *vm+"/cloud-init.iso", &p)
+	dstIsoFile := getCloudInitFileName(*vm)
+	glog.V(2).Infof("Uploading ISO file %s to datastore %+v, destination iso is %s\n", isoFile, dsObj, dstIsoFile)
+	err = dsObj.UploadFile(ctx, isoFile, dstIsoFile, &p)
 	if err != nil {
 		return err
 	}
-	glog.V(2).Infof("Uploaded ISO file %s to datastore %+v\n", isoFile, dsObj)
+	glog.V(2).Infof("Uploaded ISO file %s", isoFile)
 
 	// Find the cd-rom devide and insert the cloud init iso file into it.
 	devices, err := vmRef.Device(ctx)
@@ -278,10 +280,17 @@ func (c *VSphereCloud) UploadAndAttachISO(vm *string, isoFile string) error {
 		return err
 	}
 
+	// passing empty cd-rom name so that the first one gets returned
 	cdrom, err := devices.FindCdrom("")
 	if err != nil {
 		return err
 	}
-	iso := dsObj.Path(*vm + "/cloud-init.iso")
+	iso := dsObj.Path(dstIsoFile)
+	glog.V(2).Infof("Inserting ISO file %s into cd-rom", iso)
 	return vmRef.EditDevice(ctx, devices.InsertIso(cdrom, iso))
+
+}
+
+func getCloudInitFileName(vmName string) string {
+	return vmName + "/" + cloudInitFile
 }
