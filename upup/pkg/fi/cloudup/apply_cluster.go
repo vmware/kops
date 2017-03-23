@@ -451,7 +451,6 @@ func (c *ApplyClusterCmd) Run() error {
 				)
 			case fi.CloudProviderVSphere:
 				l.Builders = append(l.Builders,
-					&model.DNSModelBuilder{KopsModelContext: modelContext},
 					&model.PKIModelBuilder{KopsModelContext: modelContext})
 
 			default:

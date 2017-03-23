@@ -428,8 +428,8 @@ func (o *dnsOp) deleteRecords(k recordKey, dnsProviderId string) error {
 		return fmt.Errorf("no suitable zone found for %q", fqdn)
 	}
 
+	// TODO: work-around before ResourceRecordSets.List() is implemented for CoreDNS
 	if dnsProviderId == k8scoredns.ProviderName {
-		// TODO: work-around before ResourceRecordSets.List() is implemented for CoreDNS
 		rrsProvider, ok := zone.ResourceRecordSets()
 		if !ok {
 			return fmt.Errorf("zone does not support resource records %q", zone.Name())
@@ -452,6 +452,7 @@ func (o *dnsOp) deleteRecords(k recordKey, dnsProviderId string) error {
 		return nil
 	}
 
+	// when DNS provider is aws-route53 or google-clouddns
 	rrs, err := o.listRecords(zone)
 	if err != nil {
 		return fmt.Errorf("error querying resource records for zone %q: %v", zone.Name(), err)
@@ -495,8 +496,8 @@ func (o *dnsOp) updateRecords(k recordKey, newRecords []string, ttl int64, dnsPr
 	}
 
 	var existing dnsprovider.ResourceRecordSet
+	// TODO: work-around before ResourceRecordSets.List() is implemented for CoreDNS
 	if dnsProviderId == k8scoredns.ProviderName {
-		// TODO: work-around before ResourceRecordSets.List() is implemented for CoreDNS
 		dnsRecord, err := rrsProvider.Get(fqdn)
 		if err != nil {
 			return fmt.Errorf("Failed to get DNS record %s with error: %v", fqdn, err)
@@ -506,7 +507,7 @@ func (o *dnsOp) updateRecords(k recordKey, newRecords []string, ttl int64, dnsPr
 			existing = dnsRecord
 		}
 	} else {
-
+		// when DNS provider is aws-route53 or google-clouddns
 		rrs, err := o.listRecords(zone)
 		if err != nil {
 			return fmt.Errorf("error querying resource records for zone %q: %v", zone.Name(), err)
