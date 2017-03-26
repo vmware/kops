@@ -38,6 +38,10 @@ set -o pipefail
 NODEUP_URL={{ NodeUpSource }}
 NODEUP_HASH={{ NodeUpSourceHash }}
 
+{{ Env1 }}
+{{ Env2 }}
+{{ Env3 }}
+
 function ensure-install-dir() {
   INSTALL_DIR="/var/cache/kubernetes-install"
   mkdir -p ${INSTALL_DIR}

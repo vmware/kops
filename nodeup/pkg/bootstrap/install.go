@@ -28,6 +28,8 @@ import (
 	"k8s.io/kubernetes/pkg/util/sets"
 	"strings"
 	"time"
+	"os"
+	"bytes"
 )
 
 type Installation struct {
@@ -107,6 +109,22 @@ func (i *Installation) buildSystemdJob() *nodetasks.Service {
 	manifest := &systemd.Manifest{}
 	manifest.Set("Unit", "Description", "Run kops bootstrap (nodeup)")
 	manifest.Set("Unit", "Documentation", "https://github.com/kubernetes/kops")
+
+	// TODO temporary code, till vsphere cloud provider gets its own VFS implementation.
+	if os.Getenv("AWS_REGION") != "" ||  os.Getenv("AWS_ACCESS_KEY_ID") != "" || os.Getenv("AWS_SECRET_ACCESS_KEY") != "" {
+		var buffer bytes.Buffer
+		buffer.WriteString("\"AWS_REGION=")
+		buffer.WriteString(os.Getenv("AWS_REGION"))
+		buffer.WriteString("\" ")
+		buffer.WriteString("\"AWS_ACCESS_KEY_ID=")
+		buffer.WriteString(os.Getenv("AWS_ACCESS_KEY_ID"))
+		buffer.WriteString("\" ")
+		buffer.WriteString("\"AWS_SECRET_ACCESS_KEY=")
+		buffer.WriteString(os.Getenv("AWS_SECRET_ACCESS_KEY"))
+		buffer.WriteString("\" ")
+
+		manifest.Set("Service", "Environment", buffer.String())
+	}
 
 	manifest.Set("Service", "ExecStart", command)
 	manifest.Set("Service", "Type", "oneshot")

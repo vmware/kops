@@ -553,6 +553,7 @@ func (c *ApplyClusterCmd) Run() error {
 		NodeUpConfigBuilder: renderNodeUpConfig,
 		NodeUpSourceHash:    "",
 		NodeUpSource:        c.NodeUpSource,
+		AddAwsEnvironmentVariables: false,
 	}
 	switch fi.CloudProviderID(cluster.Spec.CloudProvider) {
 	case fi.CloudProviderAWS:
