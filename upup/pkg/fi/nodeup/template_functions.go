@@ -23,6 +23,7 @@ import (
 	"strings"
 	"text/template"
 
+	"bytes"
 	"github.com/golang/glog"
 	"k8s.io/kops"
 	api "k8s.io/kops/pkg/apis/kops"
@@ -31,7 +32,6 @@ import (
 	"k8s.io/kops/upup/pkg/fi/secrets"
 	"k8s.io/kops/util/pkg/vfs"
 	"k8s.io/kubernetes/pkg/util/sets"
-	"bytes"
 	"os"
 )
 

@@ -21,8 +21,8 @@ import (
 	"k8s.io/kops/pkg/model/resources"
 	"k8s.io/kops/upup/pkg/fi"
 	"k8s.io/kops/upup/pkg/fi/nodeup"
-	"text/template"
 	"os"
+	"text/template"
 )
 
 // BootstrapScript creates the bootstrap script
@@ -82,7 +82,12 @@ func (b *BootstrapScript) ResourceNodeUp(ig *kops.InstanceGroup) (*fi.ResourceHo
 		},
 	}
 
-	templateResource, err := NewTemplateResource("nodeup", resources.AWSNodeUpTemplate, functions, nil)
+	nodeupTemplate := resources.AWSNodeUpTemplate
+	if b.AddAwsEnvironmentVariables {
+		nodeupTemplate = resources.VsphereNodeUpTemplate
+	}
+
+	templateResource, err := NewTemplateResource("nodeup", nodeupTemplate, functions, nil)
 	if err != nil {
 		return nil, err
 	}

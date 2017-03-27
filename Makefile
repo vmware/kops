@@ -154,7 +154,7 @@ version-dist: nodeup-dist kops-dist protokube-export utils-dist
 	cp .build/dist/linux/amd64/utils.tar.gz.sha1 .build/upload/kops/${VERSION}/linux/amd64/utils.tar.gz.sha1
 
 vsphere-setup:
-	hack/vsphere/vsphere_env.sh
+	hack/vsphere/vsphere_env.sh --set
 
 vsphere-version-dist: vsphere-setup nodeup-dist protokube-export
 	rm -rf .build/upload

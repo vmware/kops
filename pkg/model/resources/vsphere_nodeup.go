@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors.
+Copyright 2017 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ limitations under the License.
 
 package resources
 
-var AWSNodeUpTemplate = `#!/bin/bash
+var VsphereNodeUpTemplate = `#!/bin/bash
 # Copyright 2016 The Kubernetes Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,6 +37,10 @@ set -o pipefail
 
 NODEUP_URL={{ NodeUpSource }}
 NODEUP_HASH={{ NodeUpSourceHash }}
+
+{{ Env1 }}
+{{ Env2 }}
+{{ Env3 }}
 
 function ensure-install-dir() {
   INSTALL_DIR="/var/cache/kubernetes-install"

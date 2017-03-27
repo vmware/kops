@@ -42,7 +42,7 @@ const (
 	defaultMasterMachineTypeAWS     = "m3.medium"
 	defaultMasterMachineTypeVSphere = "vsphere_master"
 
-	defaultVSphereNodeImage         = "ubuntu_16_04"
+	defaultVSphereNodeImage = "ubuntu_16_04"
 )
 
 var masterMachineTypeExceptions = map[string]string{

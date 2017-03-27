@@ -17,6 +17,7 @@ limitations under the License.
 package bootstrap
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/golang/glog"
 	"k8s.io/kops/nodeup/pkg/distros"
@@ -26,10 +27,9 @@ import (
 	"k8s.io/kops/upup/pkg/fi/nodeup/nodetasks"
 	"k8s.io/kops/util/pkg/vfs"
 	"k8s.io/kubernetes/pkg/util/sets"
+	"os"
 	"strings"
 	"time"
-	"os"
-	"bytes"
 )
 
 type Installation struct {
@@ -111,7 +111,7 @@ func (i *Installation) buildSystemdJob() *nodetasks.Service {
 	manifest.Set("Unit", "Documentation", "https://github.com/kubernetes/kops")
 
 	// TODO temporary code, till vsphere cloud provider gets its own VFS implementation.
-	if os.Getenv("AWS_REGION") != "" ||  os.Getenv("AWS_ACCESS_KEY_ID") != "" || os.Getenv("AWS_SECRET_ACCESS_KEY") != "" {
+	if os.Getenv("AWS_REGION") != "" || os.Getenv("AWS_ACCESS_KEY_ID") != "" || os.Getenv("AWS_SECRET_ACCESS_KEY") != "" {
 		var buffer bytes.Buffer
 		buffer.WriteString("\"AWS_REGION=")
 		buffer.WriteString(os.Getenv("AWS_REGION"))
