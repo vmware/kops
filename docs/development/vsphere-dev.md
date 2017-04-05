@@ -18,7 +18,7 @@ For now we hardcoded DNS zone to skydns.local. So your cluster name should have 
 1. Login to vSphere Client.
 2. Right-Click on ESX host on which you want to deploy the DNS server.
 3. Select Deploy OVF template.
-4. Copy and paste URL for [OVA](https://storage.googleapis.com/kubernetes-anywhere-for-vsphere-cna-storage/coredns.ova).
+4. Copy and paste URL for [OVA](https://storage.googleapis.com/kubernetes-anywhere-for-vsphere-cna-storage/DNSStorage.ova).
 5. Follow next steps according to instructions mentioned in wizard.
 6. Power on the imported VM.
 7. SSH into the VM and execute ./start-dns.sh under /root. Username/Password: root/kubernetes
@@ -66,6 +66,15 @@ export VSPHERE_DNSCONTROLLER_IMAGE=[your docker hub repo]
 make
 kops create cluster ...
 ```
+
+## Setting up Minio server for kops state store
+We utilize [Minio](https://www.minio.io/) for cluster state storage.
+We utilize the same VM for DNS service, which is launched in the "Setup CoreDNS server" section.
+To setup the Minio server, follow the steps:
+1. SSH into the same VM as where you just started CoreDNS service.
+2. ./start-minio.sh your-bucket-name (No capital character should be used for the bucket name.)
+3. Copy the output of the scripts, which will be used to set necessary environment variables into ```[kops_dir]/hack/vsphere/set_env``` in the next step.
+
 
 ## Kops with vSphere
 vSphere cloud provider support in kops is a work in progress. To try out deploying kubernetes cluster on vSphere using kops, some extra steps are required.
