@@ -41,6 +41,7 @@ NODEUP_HASH={{ NodeUpSourceHash }}
 {{ Env1 }}
 {{ Env2 }}
 {{ Env3 }}
+{{ Env4 }}
 
 function ensure-install-dir() {
   INSTALL_DIR="/var/cache/kubernetes-install"

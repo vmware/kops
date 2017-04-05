@@ -58,7 +58,7 @@ func (b *AutoscalingGroupModelBuilder) Build(c *fi.ModelBuilderContext) error {
 				IG:              ig,
 				BootstrapScript: b.BootstrapScript,
 			}
-			attachISOTask.BootstrapScript.AddAwsEnvironmentVariables = true
+			attachISOTask.BootstrapScript.AddMinioEnvironmentVariables = true
 
 			c.AddTask(attachISOTask)
 

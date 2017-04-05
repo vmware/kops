@@ -30,7 +30,7 @@ type BootstrapScript struct {
 	NodeUpSource     string
 	NodeUpSourceHash string
 	// TODO temporary field to enable workflow for vSphere cloud provider.
-	AddAwsEnvironmentVariables bool
+	AddMinioEnvironmentVariables bool
 
 	NodeUpConfigBuilder func(ig *kops.InstanceGroup) (*nodeup.NodeUpConfig, error)
 }
@@ -63,27 +63,33 @@ func (b *BootstrapScript) ResourceNodeUp(ig *kops.InstanceGroup) (*fi.ResourceHo
 		},
 		// TODO temporary code, till vsphere cloud provider gets its own VFS implementation.
 		"Env1": func() string {
-			if b.AddAwsEnvironmentVariables && os.Getenv("AWS_REGION") != "" {
-				return "export AWS_REGION=" + os.Getenv("AWS_REGION")
+			if b.AddMinioEnvironmentVariables && os.Getenv("MINIO_REGION") != "" {
+				return "export MINIO_REGION=" + os.Getenv("MINIO_REGION")
 			}
 			return ""
 		},
 		"Env2": func() string {
-			if b.AddAwsEnvironmentVariables && os.Getenv("AWS_ACCESS_KEY_ID") != "" {
-				return "export AWS_ACCESS_KEY_ID=" + os.Getenv("AWS_ACCESS_KEY_ID")
+			if b.AddMinioEnvironmentVariables && os.Getenv("MINIO_ACCESS_KEY_ID") != "" {
+				return "export MINIO_ACCESS_KEY_ID=" + os.Getenv("MINIO_ACCESS_KEY_ID")
 			}
 			return ""
 		},
 		"Env3": func() string {
-			if b.AddAwsEnvironmentVariables && os.Getenv("AWS_SECRET_ACCESS_KEY") != "" {
-				return "export AWS_SECRET_ACCESS_KEY=" + os.Getenv("AWS_SECRET_ACCESS_KEY")
+			if b.AddMinioEnvironmentVariables && os.Getenv("MINIO_SECRET_ACCESS_KEY") != "" {
+				return "export MINIO_SECRET_ACCESS_KEY=" + os.Getenv("MINIO_SECRET_ACCESS_KEY")
+			}
+			return ""
+		},
+		"Env4": func() string {
+			if b.AddMinioEnvironmentVariables && os.Getenv("MINIO_ENDPOINT") != "" {
+				return "export MINIO_ENDPOINT=" + os.Getenv("MINIO_ENDPOINT")
 			}
 			return ""
 		},
 	}
 
 	nodeupTemplate := resources.AWSNodeUpTemplate
-	if b.AddAwsEnvironmentVariables {
+	if b.AddMinioEnvironmentVariables {
 		nodeupTemplate = resources.VsphereNodeUpTemplate
 	}
 

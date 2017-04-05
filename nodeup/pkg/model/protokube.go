@@ -232,16 +232,25 @@ func (t *ProtokubeBuilder) ProtokubeFlags(k8sVersion semver.Version) *ProtokubeF
 
 func (t *ProtokubeBuilder) ProtokubeEnvironmentVariables() string {
 	// TODO temporary code, till vsphere cloud provider gets its own VFS implementation.
-	if fi.CloudProviderID(t.Cluster.Spec.CloudProvider) == fi.CloudProviderVSphere && (os.Getenv("AWS_ACCESS_KEY_ID") != "" || os.Getenv("AWS_SECRET_ACCESS_KEY") != "") {
+	if fi.CloudProviderID(t.Cluster.Spec.CloudProvider) == fi.CloudProviderVSphere &&
+		(os.Getenv("MINIO_ACCESS_KEY_ID") != "" || os.Getenv("MINIO_SECRET_ACCESS_KEY") != "" || os.Getenv("MINIO_REGION") != "" || os.Getenv("MINIO_ENDPOINT") != "") {
 		var buffer bytes.Buffer
 		buffer.WriteString(" ")
-		buffer.WriteString("-e AWS_ACCESS_KEY_ID=")
+		buffer.WriteString("-e MINIO_ACCESS_KEY_ID=")
 		buffer.WriteString("'")
-		buffer.WriteString(os.Getenv("AWS_ACCESS_KEY_ID"))
+		buffer.WriteString(os.Getenv("MINIO_ACCESS_KEY_ID"))
 		buffer.WriteString("'")
-		buffer.WriteString(" -e AWS_SECRET_ACCESS_KEY=")
+		buffer.WriteString(" -e MINIO_SECRET_ACCESS_KEY=")
 		buffer.WriteString("'")
-		buffer.WriteString(os.Getenv("AWS_SECRET_ACCESS_KEY"))
+		buffer.WriteString(os.Getenv("MINIO_SECRET_ACCESS_KEY"))
+		buffer.WriteString("'")
+		buffer.WriteString(" -e MINIO_REGION=")
+		buffer.WriteString("'")
+		buffer.WriteString(os.Getenv("MINIO_REGION"))
+		buffer.WriteString("'")
+		buffer.WriteString(" -e MINIO_ENDPOINT=")
+		buffer.WriteString("'")
+		buffer.WriteString(os.Getenv("MINIO_ENDPOINT"))
 		buffer.WriteString("'")
 		buffer.WriteString(" ")
 

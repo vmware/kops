@@ -40,11 +40,13 @@ type VFSContext struct {
 	// mutex guards gcsClient
 	mutex sync.Mutex
 	// The google cloud storage client, if initialized
-	gcsClient *storage.Service
+	gcsClient    *storage.Service
+	minioContext *MinioContext
 }
 
 var Context = VFSContext{
-	s3Context: NewS3Context(),
+	s3Context:    NewS3Context(),
+	minioContext: NewMinioContext(),
 }
 
 // ReadLocation reads a file from a vfs URL
@@ -104,6 +106,10 @@ func (c *VFSContext) BuildVfsPath(p string) (Path, error) {
 
 	if strings.HasPrefix(p, "gs://") {
 		return c.buildGCSPath(p)
+	}
+
+	if strings.HasPrefix(p, "minio://") {
+		return c.buildMinioPath(p)
 	}
 
 	return nil, fmt.Errorf("unknown / unhandled path type: %q", p)
@@ -283,4 +289,22 @@ func (c *VFSContext) getGCSClient() (*storage.Service, error) {
 
 	c.gcsClient = gcsClient
 	return gcsClient, nil
+}
+
+func (c *VFSContext) buildMinioPath(p string) (*MinioPath, error) {
+	u, err := url.Parse(p)
+	if err != nil {
+		return nil, fmt.Errorf("invalid minio path: %q", p)
+	}
+	if u.Scheme != "minio" {
+		return nil, fmt.Errorf("invalid minio path: %q", p)
+	}
+
+	bucket := strings.TrimSuffix(u.Host, "/")
+	if bucket == "" {
+		return nil, fmt.Errorf("invalid minio path: %q", p)
+	}
+
+	minioPath := newMinioPath(c.minioContext, bucket, u.Path)
+	return minioPath, nil
 }
