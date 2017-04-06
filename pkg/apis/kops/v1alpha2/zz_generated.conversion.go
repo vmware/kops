@@ -252,6 +252,13 @@ func autoConvert_v1alpha2_CloudConfiguration_To_kops_CloudConfiguration(in *Clou
 	out.Multizone = in.Multizone
 	out.NodeTags = in.NodeTags
 	out.NodeInstancePrefix = in.NodeInstancePrefix
+	out.VSphereUsername = in.VSphereUsername
+	out.VSpherePassword = in.VSpherePassword
+	out.VSphereServer = in.VSphereServer
+	out.VSphereDatacenter = in.VSphereDatacenter
+	out.VSphereDatastore = in.VSphereDatastore
+	out.VSphereResourcePool = in.VSphereResourcePool
+	out.VSphereCoreDNSServer = in.VSphereCoreDNSServer
 	return nil
 }
 
@@ -263,6 +270,13 @@ func autoConvert_kops_CloudConfiguration_To_v1alpha2_CloudConfiguration(in *kops
 	out.Multizone = in.Multizone
 	out.NodeTags = in.NodeTags
 	out.NodeInstancePrefix = in.NodeInstancePrefix
+	out.VSphereUsername = in.VSphereUsername
+	out.VSpherePassword = in.VSpherePassword
+	out.VSphereServer = in.VSphereServer
+	out.VSphereDatacenter = in.VSphereDatacenter
+	out.VSphereResourcePool = in.VSphereResourcePool
+	out.VSphereDatastore = in.VSphereDatastore
+	out.VSphereCoreDNSServer = in.VSphereCoreDNSServer
 	return nil
 }
 
@@ -1348,6 +1362,8 @@ func Convert_kops_KubeSchedulerConfig_To_v1alpha2_KubeSchedulerConfig(in *kops.K
 
 func autoConvert_v1alpha2_KubeletConfigSpec_To_kops_KubeletConfigSpec(in *KubeletConfigSpec, out *kops.KubeletConfigSpec, s conversion.Scope) error {
 	out.APIServers = in.APIServers
+	out.KubeconfigPath = in.KubeconfigPath
+	out.RequireKubeconfig = in.RequireKubeconfig
 	out.LogLevel = in.LogLevel
 	out.PodManifestPath = in.PodManifestPath
 	out.HostnameOverride = in.HostnameOverride
@@ -1391,6 +1407,8 @@ func Convert_v1alpha2_KubeletConfigSpec_To_kops_KubeletConfigSpec(in *KubeletCon
 
 func autoConvert_kops_KubeletConfigSpec_To_v1alpha2_KubeletConfigSpec(in *kops.KubeletConfigSpec, out *KubeletConfigSpec, s conversion.Scope) error {
 	out.APIServers = in.APIServers
+	out.KubeconfigPath = in.KubeconfigPath
+	out.RequireKubeconfig = in.RequireKubeconfig
 	out.LogLevel = in.LogLevel
 	out.PodManifestPath = in.PodManifestPath
 	out.HostnameOverride = in.HostnameOverride

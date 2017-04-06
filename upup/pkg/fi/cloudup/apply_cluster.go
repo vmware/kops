@@ -35,6 +35,7 @@ import (
 	"k8s.io/kops/pkg/model/awsmodel"
 	"k8s.io/kops/pkg/model/components"
 	"k8s.io/kops/pkg/model/gcemodel"
+	"k8s.io/kops/pkg/model/vspheremodel"
 	"k8s.io/kops/upup/pkg/fi"
 	"k8s.io/kops/upup/pkg/fi/cloudup/awstasks"
 	"k8s.io/kops/upup/pkg/fi/cloudup/awsup"
@@ -42,6 +43,8 @@ import (
 	"k8s.io/kops/upup/pkg/fi/cloudup/gce"
 	"k8s.io/kops/upup/pkg/fi/cloudup/gcetasks"
 	"k8s.io/kops/upup/pkg/fi/cloudup/terraform"
+	"k8s.io/kops/upup/pkg/fi/cloudup/vsphere"
+	"k8s.io/kops/upup/pkg/fi/cloudup/vspheretasks"
 	"k8s.io/kops/upup/pkg/fi/fitasks"
 	"k8s.io/kops/upup/pkg/fi/nodeup"
 	"k8s.io/kops/util/pkg/hashing"
@@ -359,6 +362,17 @@ func (c *ApplyClusterCmd) Run() error {
 			l.TemplateFunctions["MachineTypeInfo"] = awsup.GetMachineTypeInfo
 		}
 
+	case fi.CloudProviderVSphere:
+		{
+			vsphereCloud := cloud.(*vsphere.VSphereCloud)
+			// TODO: map region with vCenter cluster, or datacenter, or datastore?
+			region = vsphereCloud.Cluster
+
+			l.AddTypes(map[string]interface{}{
+				"instance": &vspheretasks.VirtualMachine{},
+			})
+		}
+
 	default:
 		return fmt.Errorf("unknown CloudProvider %q", cluster.Spec.CloudProvider)
 	}
@@ -435,6 +449,9 @@ func (c *ApplyClusterCmd) Run() error {
 					&gcemodel.NetworkModelBuilder{GCEModelContext: gceModelContext},
 					//&model.SSHKeyModelBuilder{KopsModelContext: modelContext},
 				)
+			case fi.CloudProviderVSphere:
+				l.Builders = append(l.Builders,
+					&model.PKIModelBuilder{KopsModelContext: modelContext})
 
 			default:
 				return fmt.Errorf("unknown cloudprovider %q", cluster.Spec.CloudProvider)
@@ -533,9 +550,10 @@ func (c *ApplyClusterCmd) Run() error {
 	}
 
 	bootstrapScriptBuilder := &model.BootstrapScript{
-		NodeUpConfigBuilder: renderNodeUpConfig,
-		NodeUpSourceHash:    "",
-		NodeUpSource:        c.NodeUpSource,
+		NodeUpConfigBuilder:        renderNodeUpConfig,
+		NodeUpSourceHash:           "",
+		NodeUpSource:               c.NodeUpSource,
+		AddAwsEnvironmentVariables: false,
 	}
 	switch fi.CloudProviderID(cluster.Spec.CloudProvider) {
 	case fi.CloudProviderAWS:
@@ -557,6 +575,17 @@ func (c *ApplyClusterCmd) Run() error {
 			l.Builders = append(l.Builders, &gcemodel.AutoscalingGroupModelBuilder{
 				GCEModelContext: gceModelContext,
 				BootstrapScript: bootstrapScriptBuilder,
+			})
+		}
+	case fi.CloudProviderVSphere:
+		{
+			vsphereModelContext := &vspheremodel.VSphereModelContext{
+				KopsModelContext: modelContext,
+			}
+
+			l.Builders = append(l.Builders, &vspheremodel.AutoscalingGroupModelBuilder{
+				VSphereModelContext: vsphereModelContext,
+				BootstrapScript:     bootstrapScriptBuilder,
 			})
 		}
 
@@ -605,6 +634,8 @@ func (c *ApplyClusterCmd) Run() error {
 			target = gce.NewGCEAPITarget(cloud.(*gce.GCECloud))
 		case "aws":
 			target = awsup.NewAWSAPITarget(cloud.(awsup.AWSCloud))
+		case "vsphere":
+			target = vsphere.NewVSphereAPITarget(cloud.(*vsphere.VSphereCloud))
 		default:
 			return fmt.Errorf("direct configuration not supported with CloudProvider:%q", cluster.Spec.CloudProvider)
 		}

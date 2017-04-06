@@ -23,6 +23,7 @@ import (
 	"strings"
 	"text/template"
 
+	"bytes"
 	"github.com/golang/glog"
 	"k8s.io/kops"
 	api "k8s.io/kops/pkg/apis/kops"
@@ -31,6 +32,7 @@ import (
 	"k8s.io/kops/upup/pkg/fi/secrets"
 	"k8s.io/kops/util/pkg/vfs"
 	"k8s.io/kubernetes/pkg/util/sets"
+	"os"
 )
 
 const TagMaster = "_kubernetes_master"
@@ -128,6 +130,8 @@ func (t *templateFunctions) populate(dest template.FuncMap) {
 	dest["ProtokubeImagePullCommand"] = t.ProtokubeImagePullCommand
 
 	dest["ProtokubeFlags"] = t.ProtokubeFlags
+
+	dest["ProtokubeEnvironmentVariables"] = t.ProtokubeEnvironmentVariables
 }
 
 // CACertificatePool returns the set of valid CA certificates for the cluster
@@ -272,6 +276,10 @@ func (t *templateFunctions) ProtokubeFlags() *ProtokubeFlags {
 			f.DNSProvider = fi.String("aws-route53")
 		case fi.CloudProviderGCE:
 			f.DNSProvider = fi.String("google-clouddns")
+		case fi.CloudProviderVSphere:
+			f.DNSProvider = fi.String("coredns")
+			f.ClusterId = fi.String(t.cluster.ObjectMeta.Name)
+			f.DNSServer = fi.String(*t.cluster.Spec.CloudConfig.VSphereCoreDNSServer)
 		default:
 			glog.Warningf("Unknown cloudprovider %q; won't set DNS provider")
 		}
@@ -296,4 +304,24 @@ func (t *templateFunctions) KubeProxyConfig() *api.KubeProxyConfig {
 	}
 
 	return config
+}
+
+func (t *templateFunctions) ProtokubeEnvironmentVariables() string {
+	// TODO temporary code, till vsphere cloud provider gets its own VFS implementation.
+	if fi.CloudProviderID(t.cluster.Spec.CloudProvider) == fi.CloudProviderVSphere && (os.Getenv("AWS_ACCESS_KEY_ID") != "" || os.Getenv("AWS_SECRET_ACCESS_KEY") != "") {
+		var buffer bytes.Buffer
+		buffer.WriteString(" ")
+		buffer.WriteString("-e AWS_ACCESS_KEY_ID=")
+		buffer.WriteString("'")
+		buffer.WriteString(os.Getenv("AWS_ACCESS_KEY_ID"))
+		buffer.WriteString("'")
+		buffer.WriteString(" -e AWS_SECRET_ACCESS_KEY=")
+		buffer.WriteString("'")
+		buffer.WriteString(os.Getenv("AWS_SECRET_ACCESS_KEY"))
+		buffer.WriteString("'")
+		buffer.WriteString(" ")
+
+		return buffer.String()
+	}
+	return ""
 }
