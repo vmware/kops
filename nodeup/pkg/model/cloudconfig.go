@@ -24,6 +24,7 @@ import (
 	"strings"
 )
 
+// Travis test
 const CloudConfigFilePath = "/etc/kubernetes/cloud.config"
 
 // CloudConfigBuilder creates the cloud configuration file
@@ -79,7 +80,6 @@ func (b *CloudConfigBuilder) Build(c *fi.ModelBuilderContext) error {
 	if fi.CloudProviderID(b.Cluster.Spec.CloudProvider) == fi.CloudProviderVSphere {
 		config += "[disk]\n" + "scsicontrollertype = pvscsi" + "\n"
 	}
-
 
 	t := &nodetasks.File{
 		Path:     CloudConfigFilePath,
