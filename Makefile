@@ -153,6 +153,24 @@ version-dist: nodeup-dist kops-dist protokube-export utils-dist
 	cp .build/dist/linux/amd64/utils.tar.gz .build/upload/kops/${VERSION}/linux/amd64/utils.tar.gz
 	cp .build/dist/linux/amd64/utils.tar.gz.sha1 .build/upload/kops/${VERSION}/linux/amd64/utils.tar.gz.sha1
 
+vsphere-version-dist: nodeup-dist protokube-export
+	rm -rf .build/upload
+	mkdir -p .build/upload/kops/${VERSION}/linux/amd64/
+	mkdir -p .build/upload/kops/${VERSION}/darwin/amd64/
+	mkdir -p .build/upload/kops/${VERSION}/images/
+	mkdir -p .build/upload/utils/${VERSION}/linux/amd64/
+	cp .build/dist/nodeup .build/upload/kops/${VERSION}/linux/amd64/nodeup
+	cp .build/dist/nodeup.sha1 .build/upload/kops/${VERSION}/linux/amd64/nodeup.sha1
+	cp .build/dist/images/protokube.tar.gz .build/upload/kops/${VERSION}/images/protokube.tar.gz
+	cp .build/dist/images/protokube.tar.gz.sha1 .build/upload/kops/${VERSION}/images/protokube.tar.gz.sha1
+	scp -r .build/dist/nodeup* ${TARGET}:${TARGET_PATH}/nodeup
+	scp -r .build/dist/images/protokube.tar.gz* ${TARGET}:${TARGET_PATH}/protokube/
+	make kops-dist
+	cp .build/dist/linux/amd64/kops .build/upload/kops/${VERSION}/linux/amd64/kops
+	cp .build/dist/linux/amd64/kops.sha1 .build/upload/kops/${VERSION}/linux/amd64/kops.sha1
+	cp .build/dist/darwin/amd64/kops .build/upload/kops/${VERSION}/darwin/amd64/kops
+	cp .build/dist/darwin/amd64/kops.sha1 .build/upload/kops/${VERSION}/darwin/amd64/kops.sha1
+
 upload: kops version-dist
 	aws s3 sync --acl public-read .build/upload/ ${S3_BUCKET}
 
@@ -189,6 +207,11 @@ push-gce-run: push
 push-aws-run: push
 	ssh -t ${TARGET} sudo SKIP_PACKAGE_UPDATE=1 /tmp/nodeup --conf=/var/cache/kubernetes-install/kube_env.yaml --v=8
 
+# Please read docs/development/vsphere-dev.md before trying this out.
+# Build protokube and nodeup. Pushes protokube to DOCKER_REGISTRY and scp nodeup binary to the TARGET. Uncomment ssh part to run nodeup at set TARGET.
+push-vsphere: nodeup protokube-push
+	scp -C .build/dist/nodeup  ${TARGET}:~/
+	# ssh -t root@10.161.56.108 'export AWS_ACCESS_KEY_ID="AKIAJ6UOKB6BGYLIQJEQ"; export AWS_SECRET_ACCESS_KEY="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"; export AWS_REGION="us-west-2"; SKIP_PACKAGE_UPDATE=1 ~/nodeup --conf=/var/cache/kubernetes-install/kube_env.yaml --v=8'
 
 protokube-gocode:
 	go install k8s.io/kops/protokube/cmd/protokube

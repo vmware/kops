@@ -24,6 +24,8 @@ import (
 	"strings"
 )
 
+
+// Travis test
 const CloudConfigFilePath = "/etc/kubernetes/cloud.config"
 
 // CloudConfigBuilder creates the cloud configuration file
@@ -51,7 +53,36 @@ func (b *CloudConfigBuilder) Build(c *fi.ModelBuilderContext) error {
 		lines = append(lines, fmt.Sprintf("multizone = %t", *cloudConfig.Multizone))
 	}
 
+	if cloudConfig.VSphereUsername != nil {
+		lines = append(lines, "user = "+*cloudConfig.VSphereUsername)
+	}
+
+	if cloudConfig.VSpherePassword != nil {
+		lines = append(lines, "password = "+*cloudConfig.VSpherePassword)
+	}
+
+	if cloudConfig.VSphereServer != nil {
+		lines = append(lines, "server = "+*cloudConfig.VSphereServer)
+		lines = append(lines, "port = 443")
+		lines = append(lines, fmt.Sprintf("insecure-flag = %t", true))
+	}
+
+	if cloudConfig.VSphereDatacenter != nil {
+		lines = append(lines, "datacenter = "+*cloudConfig.VSphereDatacenter)
+	}
+
+	if cloudConfig.VSphereDatastore != nil {
+		lines = append(lines, "datastore = "+*cloudConfig.VSphereDatastore)
+	}
+
 	config := "[global]\n" + strings.Join(lines, "\n") + "\n"
+
+	// We need this to support Kubernetes vSphere CloudProvider < v1.5.3
+	if fi.CloudProviderID(b.Cluster.Spec.CloudProvider) == fi.CloudProviderVSphere {
+		config += "[disk]\n" + "scsicontrollertype = pvscsi" + "\n"
+	}
+
+
 	t := &nodetasks.File{
 		Path:     CloudConfigFilePath,
 		Contents: fi.NewStringResource(config),

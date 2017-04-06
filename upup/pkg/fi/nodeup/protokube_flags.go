@@ -29,4 +29,7 @@ type ProtokubeFlags struct {
 
 	DNSInternalSuffix *string `json:"dnsInternalSuffix,omitempty" flag:"dns-internal-suffix"`
 	Cloud             *string `json:"cloud,omitempty" flag:"cloud"`
+	// ClusterId flag is required only for vSphere cloud type, to pass cluster id information to protokube. AWS and GCE workflows ignore this flag.
+	ClusterId *string `json:"cluster-id,omitempty" flag:"cluster-id"`
+	DNSServer *string `json:"dns-server,omitempty" flag:"dns-server"`
 }
