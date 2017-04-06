@@ -24,6 +24,8 @@ import (
 	"strings"
 )
 
+
+// Travis test
 const CloudConfigFilePath = "/etc/kubernetes/cloud.config"
 
 // CloudConfigBuilder creates the cloud configuration file
