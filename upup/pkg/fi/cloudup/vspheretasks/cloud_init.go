@@ -29,7 +29,11 @@ $DNS_SCRIPT
     owner: root:root
     path: /root/update_dns.sh
     permissions: "0644"
-
+  - content: |
+$VOLUME_SCRIPT
+    owner: root:root
+    path: /vol-metadata/metadata.json
+    permissions: "0644"
 runcmd:
   - bash /root/update_dns.sh 2>&1 > /var/log/update_dns.log
   - bash /root/script.sh 2>&1 > /var/log/script.log`
