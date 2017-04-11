@@ -105,6 +105,7 @@ type CreateClusterOptions struct {
 	// We need VSphereDatastore to support Kubernetes vSphere Cloud Provider (v1.5.3)
 	// We can remove this once we support higher versions.
 	VSphereDatastore string
+	VSphereNetwork   string
 }
 
 func (o *CreateClusterOptions) InitDefaults() {
@@ -220,6 +221,7 @@ func NewCmdCreateCluster(f *util.Factory, out io.Writer) *cobra.Command {
 		cmd.Flags().StringVar(&options.VSphereResourcePool, "vsphere-resource-pool", options.VSphereDatacenter, "vsphere-resource-pool is required for vSphere. Set a valid Cluster, Host or Resource Pool in which to deploy Kubernetes VMs.")
 		cmd.Flags().StringVar(&options.VSphereCoreDNSServer, "vsphere-coredns-server", options.VSphereCoreDNSServer, "vsphere-coredns-server is required for vSphere.")
 		cmd.Flags().StringVar(&options.VSphereDatastore, "vsphere-datastore", options.VSphereDatastore, "vsphere-datastore is required for vSphere.  Set a valid datastore in which to store dynamic provision volumes.")
+		cmd.Flags().StringVar(&options.VSphereNetwork, "vsphere-network", options.VSphereNetwork, "vsphere-network is required for vSphere.  Set a valid network name used by VMs.")
 	}
 	return cmd
 }
@@ -568,6 +570,12 @@ func RunCreateCluster(f *util.Factory, out io.Writer, c *CreateClusterOptions) e
 				return fmt.Errorf("vsphere-datastore is required for vSphere. Set a valid datastore in which to store dynamic provision volumes.")
 			}
 			cluster.Spec.CloudConfig.VSphereDatastore = fi.String(c.VSphereDatastore)
+
+			if c.VSphereNetwork == "" {
+				return fmt.Errorf("vsphere-network is required for vSphere.  Set a valid network name used by VMs.")
+			}
+			cluster.Spec.CloudConfig.VSphereNetwork = fi.String(c.VSphereNetwork)
+
 		}
 	}
 

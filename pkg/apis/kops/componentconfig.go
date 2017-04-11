@@ -697,7 +697,8 @@ type CloudConfiguration struct {
 	VSpherePassword      *string `json:"vSpherePassword,omitempty"`
 	VSphereServer        *string `json:"vSphereServer,omitempty"`
 	VSphereDatacenter    *string `json:"vSphereDatacenter,omitempty"`
-	VSphereResourcePool  *string `json:"vSphereResourcePool,omitempty"`
 	VSphereDatastore     *string `json:"vSphereDatastore,omitempty"`
+	VSphereResourcePool  *string `json:"vSphereResourcePool,omitempty"`
+	VSphereNetwork       *string `json:"vSphereDatastore,omitempty"`
 	VSphereCoreDNSServer *string `json:"vSphereCoreDNSServer,omitempty"`
 }

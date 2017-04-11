@@ -93,6 +93,11 @@ func (b *CloudConfigBuilder) Build(c *fi.ModelBuilderContext) error {
 		if vm_uuid != "" {
 			lines = append(lines, "vm-uuid = "+strings.Trim(vm_uuid, "\n"))
 		}
+
+		// Network Config for vSphere CloudProvider
+		lines = append(lines, "[network]")
+		lines = append(lines, "public-network = "+*cloudConfig.VSphereNetwork)
+
 		// Disk Config for vSphere CloudProvider
 		// We need this to support Kubernetes vSphere CloudProvider < v1.5.3
 		lines = append(lines, "[disk]")
