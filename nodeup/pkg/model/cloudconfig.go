@@ -96,8 +96,9 @@ func (b *CloudConfigBuilder) Build(c *fi.ModelBuilderContext) error {
 
 		// Network Config for vSphere CloudProvider
 		lines = append(lines, "[network]")
-		lines = append(lines, "public-network = "+*cloudConfig.VSphereNetwork)
-
+		if cloudConfig.VSphereNetwork != nil {
+			lines = append(lines, "public-network = "+*cloudConfig.VSphereNetwork)
+		}
 		// Disk Config for vSphere CloudProvider
 		// We need this to support Kubernetes vSphere CloudProvider < v1.5.3
 		lines = append(lines, "[disk]")
