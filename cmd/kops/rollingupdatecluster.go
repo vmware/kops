@@ -158,6 +158,12 @@ func RunRollingUpdateCluster(f *util.Factory, out io.Writer, options *RollingUpd
 		return err
 	}
 
+	// Validate the usage of this command for the cloud provider.
+	err = util.ValidateUsage(util.RollingUpdate, cluster.Spec.CloudProvider)
+	if err != nil {
+		return err
+	}
+
 	contextName := cluster.ObjectMeta.Name
 	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 		clientcmd.NewDefaultClientConfigLoadingRules(),

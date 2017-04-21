@@ -109,6 +109,12 @@ func RunDeleteInstanceGroup(f *util.Factory, out io.Writer, options *DeleteInsta
 		return err
 	}
 
+	// Validate the usage of this command for the cloud provider.
+	err = util.ValidateUsage(util.DeleteInstanceGroup, cluster.Spec.CloudProvider)
+	if err != nil {
+		return err
+	}
+
 	clientset, err := f.Clientset()
 	if err != nil {
 		return err

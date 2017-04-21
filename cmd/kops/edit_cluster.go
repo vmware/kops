@@ -71,6 +71,12 @@ func RunEditCluster(f *util.Factory, cmd *cobra.Command, args []string, out io.W
 		return err
 	}
 
+	// Validate the usage of this command for the cloud provider.
+	err = util.ValidateUsage(util.EditCluster, oldCluster.Spec.CloudProvider)
+	if err != nil {
+		return err
+	}
+
 	err = oldCluster.FillDefaults()
 	if err != nil {
 		return err

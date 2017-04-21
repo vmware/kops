@@ -121,6 +121,12 @@ func RunUpdateCluster(f *util.Factory, clusterName string, out io.Writer, c *Upd
 		return err
 	}
 
+	// Validate the usage of this command for the cloud provider.
+	err = util.ValidateUsage(util.UpdateCluster, cluster.Spec.CloudProvider)
+	if err != nil {
+		return err
+	}
+
 	keyStore, err := registry.KeyStore(cluster)
 	if err != nil {
 		return err
