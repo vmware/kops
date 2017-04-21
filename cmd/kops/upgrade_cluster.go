@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kops"
+	cmdutil "k8s.io/kops/cmd/kops/util"
 	api "k8s.io/kops/pkg/apis/kops"
 	"k8s.io/kops/pkg/apis/kops/util"
 	"k8s.io/kops/pkg/apis/kops/validation"
@@ -76,6 +77,12 @@ func (c *UpgradeClusterCmd) Run(args []string) error {
 	}
 
 	cluster, err := rootCommand.Cluster()
+	if err != nil {
+		return err
+	}
+
+	// Validate the usage of this command for the cloud provider.
+	err = cmdutil.ValidateUsage(cmdutil.UpgradeCluster, cluster.Spec.CloudProvider)
 	if err != nil {
 		return err
 	}

@@ -80,6 +80,12 @@ func RunCreateInstanceGroup(f *util.Factory, cmd *cobra.Command, args []string, 
 		return err
 	}
 
+	// Validate the usage of this command for the cloud provider.
+	err = util.ValidateUsage(util.CreateInstanceGroup, cluster.Spec.CloudProvider)
+	if err != nil {
+		return err
+	}
+
 	clientset, err := rootCommand.Clientset()
 	if err != nil {
 		return err
