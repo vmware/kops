@@ -90,6 +90,11 @@ func RunReplace(f *util.Factory, cmd *cobra.Command, out io.Writer, c *ReplaceOp
 				}
 
 			case *kopsapi.Cluster:
+				// Validate the usage of this command for the cloud provider.
+				err = util.ValidateUsage(util.ReplaceUsingFileName, v.Spec.CloudProvider)
+				if err != nil {
+					return err
+				}
 				_, err = clientset.Clusters().Update(v)
 				if err != nil {
 					return fmt.Errorf("error replacing cluster: %v", err)

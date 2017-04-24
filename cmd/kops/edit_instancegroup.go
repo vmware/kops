@@ -74,6 +74,12 @@ func RunEditInstanceGroup(f *util.Factory, cmd *cobra.Command, args []string, ou
 		return err
 	}
 
+	// Validate the usage of this command for the cloud provider.
+	err = util.ValidateUsage(util.EditInstanceGroup, cluster.Spec.CloudProvider)
+	if err != nil {
+		return err
+	}
+
 	channel, err := cloudup.ChannelForCluster(cluster)
 	if err != nil {
 		return err

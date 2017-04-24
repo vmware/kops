@@ -82,6 +82,12 @@ func RunToolboxConvertImported(f *util.Factory, out io.Writer, options *ToolboxC
 		return err
 	}
 
+	// Validate the usage of this command for the cloud provider.
+	err = util.ValidateUsage(util.ToolboxConvertImported, cluster.Spec.CloudProvider)
+	if err != nil {
+		return err
+	}
+
 	list, err := clientset.InstanceGroups(cluster.ObjectMeta.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return err

@@ -17,6 +17,7 @@ limitations under the License.
 package model
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/blang/semver"
 	"github.com/golang/glog"
@@ -26,6 +27,7 @@ import (
 	"k8s.io/kops/pkg/systemd"
 	"k8s.io/kops/upup/pkg/fi"
 	"k8s.io/kops/upup/pkg/fi/nodeup/nodetasks"
+	"os"
 	"strings"
 )
 
@@ -82,6 +84,7 @@ func (b *ProtokubeBuilder) buildSystemdService() (*nodetasks.Service, error) {
 		"--net=host",
 		"--privileged",
 		"--env", "KUBECONFIG=/rootfs/var/lib/kops/kubeconfig",
+		b.ProtokubeEnvironmentVariables(),
 		b.ProtokubeImageName(),
 		"/usr/bin/protokube",
 	}
@@ -160,6 +163,10 @@ type ProtokubeFlags struct {
 	Cloud             *string `json:"cloud,omitempty" flag:"cloud"`
 
 	ApplyTaints *bool `json:"applyTaints,omitempty" flag:"apply-taints"`
+
+	// ClusterId flag is required only for vSphere cloud type, to pass cluster id information to protokube. AWS and GCE workflows ignore this flag.
+	ClusterId *string `json:"cluster-id,omitempty" flag:"cluster-id"`
+	DNSServer *string `json:"dns-server,omitempty" flag:"dns-server"`
 }
 
 // ProtokubeFlags returns the flags object for protokube
@@ -205,6 +212,10 @@ func (t *ProtokubeBuilder) ProtokubeFlags(k8sVersion semver.Version) *ProtokubeF
 			f.DNSProvider = fi.String("aws-route53")
 		case fi.CloudProviderGCE:
 			f.DNSProvider = fi.String("google-clouddns")
+		case fi.CloudProviderVSphere:
+			f.DNSProvider = fi.String("coredns")
+			f.ClusterId = fi.String(t.Cluster.ObjectMeta.Name)
+			f.DNSServer = fi.String(*t.Cluster.Spec.CloudConfig.VSphereCoreDNSServer)
 		default:
 			glog.Warningf("Unknown cloudprovider %q; won't set DNS provider")
 		}
@@ -217,4 +228,32 @@ func (t *ProtokubeBuilder) ProtokubeFlags(k8sVersion semver.Version) *ProtokubeF
 	}
 
 	return f
+}
+
+func (t *ProtokubeBuilder) ProtokubeEnvironmentVariables() string {
+	// Pass in required credentials when using user-defined s3 endpoint
+	if os.Getenv("S3_ENDPOINT") != "" {
+		var buffer bytes.Buffer
+		buffer.WriteString(" ")
+		buffer.WriteString("-e S3_ENDPOINT=")
+		buffer.WriteString("'")
+		buffer.WriteString(os.Getenv("S3_ENDPOINT"))
+		buffer.WriteString("'")
+		buffer.WriteString(" -e S3_REGION=")
+		buffer.WriteString("'")
+		buffer.WriteString(os.Getenv("S3_REGION"))
+		buffer.WriteString("'")
+		buffer.WriteString(" -e S3_ACCESS_KEY_ID=")
+		buffer.WriteString("'")
+		buffer.WriteString(os.Getenv("S3_ACCESS_KEY_ID"))
+		buffer.WriteString("'")
+		buffer.WriteString(" -e S3_SECRET_ACCESS_KEY=")
+		buffer.WriteString("'")
+		buffer.WriteString(os.Getenv("S3_SECRET_ACCESS_KEY"))
+		buffer.WriteString("'")
+		buffer.WriteString(" ")
+
+		return buffer.String()
+	}
+	return ""
 }
