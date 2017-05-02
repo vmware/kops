@@ -1,0 +1,24 @@
+apiVersion: storage.k8s.io/v1beta1
+kind: StorageClass
+metadata:
+  name: default
+  labels:
+    k8s-addon: storage-vsphere.addons.k8s.io
+provisioner: kubernetes.io/vsphere-volume
+parameters:
+  diskformat: thin
+
+---
+
+apiVersion: storage.k8s.io/v1beta1
+kind: StorageClass
+metadata:
+  name: thin
+  annotations:
+    storageclass.beta.kubernetes.io/is-default-class: "true"
+  labels:
+    k8s-addon: storage-vsphere.addons.k8s.io
+provisioner: kubernetes.io/vsphere-volume
+parameters:
+  diskformat: thin
+

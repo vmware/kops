@@ -173,7 +173,15 @@ func (b *BootstrapChannelBuilder) buildManifest() (*channelsapi.Addons, map[stri
 	}
 
 	{
-		key := "storage-aws.addons.k8s.io"
+		var key string
+
+		switch fi.CloudProviderID(b.cluster.Spec.CloudProvider) {
+		case fi.CloudProviderVSphere:
+			key = "storage-vsphere.addons.k8s.io"
+		case fi.CloudProviderAWS:
+			key = "storage-aws.addons.k8s.io"
+		}
+
 		version := "1.6.0"
 
 		location := key + "/v" + version + ".yaml"
